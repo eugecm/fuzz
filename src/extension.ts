@@ -21,11 +21,14 @@ class SearchEntryQuickPickItem implements vscode.QuickPickItem {
   public result: SearchResult;
 
   constructor(result: SearchResult) {
+    let workspaceFolder = "";
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders !== undefined) {
+      workspaceFolder = workspaceFolders[0].uri.fsPath;
+    }
     this.result = result;
     this.detail =
-      result.filePath.replace(vscode.workspace.rootPath, "") +
-      ":" +
-      result.lineNumber;
+      result.filePath.replace(workspaceFolder, "") + ":" + result.lineNumber;
     this.label = result.line.trim();
     this.alwaysShow = true;
   }
@@ -42,6 +45,7 @@ const search = (term: string, limit: number) =>
 
     let output = "";
     const rg = cp.spawn("rg", [
+      "--glob=!node_modules",
       "--column",
       "--line-number",
       "--no-heading",
@@ -112,20 +116,24 @@ export function activate(context: vscode.ExtensionContext) {
     let qp = vscode.window.createQuickPick();
     qp.ignoreFocusOut = true;
     (qp as any).sortByLabel = false;
+    let timer: NodeJS.Timer;
     qp.onDidChangeValue(async (e) => {
-      try {
-        let results = await search(e, 20);
-        qp.items = results
-          .slice(0, 20)
-          .map((r) => new SearchEntryQuickPickItem(r));
-      } catch (e) {
-        if (typeof e === "string") {
-          vscode.window.showErrorMessage(e);
-        } else if (e instanceof Error) {
-          vscode.window.showErrorMessage(e.message);
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        try {
+          let results = await search(e, 20);
+          qp.items = results
+            .slice(0, 20)
+            .map((r) => new SearchEntryQuickPickItem(r));
+        } catch (e) {
+          if (typeof e === "string") {
+            vscode.window.showErrorMessage(e);
+          } else if (e instanceof Error) {
+            vscode.window.showErrorMessage(e.message);
+          }
+          console.log(`error: ${e}`);
         }
-        console.log(`error: ${e}`);
-      }
+      }, 500);
     });
 
     qp.onDidChangeActive(async () => {
