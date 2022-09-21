@@ -114,7 +114,6 @@ const search = (term: string, limit: number) =>
 export function activate(context: vscode.ExtensionContext) {
   let disposable = vscode.commands.registerCommand("fuzz.search", () => {
     let qp = vscode.window.createQuickPick();
-    qp.ignoreFocusOut = true;
     (qp as any).sortByLabel = false;
     let timer: NodeJS.Timer;
     qp.onDidChangeValue(async (e) => {
