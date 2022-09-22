@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
 import * as cp from "child_process";
 
+const PROCESS_TIMEOUT_MILLIS = 5_000; // Allow processes to run for up to 5 seconds.
+
 class SearchResult {
   public readonly filePath: string;
   public readonly lineNumber: number;
@@ -44,19 +46,27 @@ const search = (term: string, limit: number) =>
     const workspaceFolder = workspaceFolders[0].uri.fsPath;
 
     let output = "";
-    const rg = cp.spawn("rg", [
-      "--glob=!node_modules",
-      "--column",
-      "--line-number",
-      "--no-heading",
-      "--color=never",
-      "--smart-case",
-      "--field-match-separator=:",
-      "--max-filesize=1M",
-      ".",
-      workspaceFolder,
-    ]);
-    const fzf = cp.spawn("fzf", ["-f", term]);
+    const rg = cp.spawn(
+      "rg",
+      [
+        "--glob=!node_modules",
+        "--column",
+        "--line-number",
+        "--no-heading",
+        "--color=never",
+        "--smart-case",
+        "--field-match-separator=:",
+        "--max-filesize=1M",
+        ".",
+        workspaceFolder,
+      ],
+      {
+        timeout: PROCESS_TIMEOUT_MILLIS,
+      }
+    );
+    const fzf = cp.spawn("fzf", ["-f", term], {
+      timeout: PROCESS_TIMEOUT_MILLIS,
+    });
     const head = cp.spawn("head", ["-n", limit.toString()]);
 
     // Pipe outputs
@@ -74,9 +84,27 @@ const search = (term: string, limit: number) =>
       // TODO: Verify exit code
       fzf.stdin.end();
     });
+    rg.on("exit", (_code, signal) => {
+      // process will be terminated using SIGTERM if it takes too long to run.
+      // Tell the user what happened.
+      if (signal === "SIGTERM") {
+        reject(
+          "'rg' command took too long to run, so it was stopped. This normally happens when your project has too many files. Make sure your .gitignore is ignoring files you don't want to include in your search"
+        );
+      }
+    });
     fzf.on("close", (_code) => {
       // TODO: Verify exit code
       head.stdin.end();
+    });
+    fzf.on("exit", (_code, signal) => {
+      // process will be terminated using SIGTERM if it takes too long to run.
+      // Tell the user what happened.
+      if (signal === "SIGTERM") {
+        reject(
+          "'fzf' command took too long to run, so it was stopped. This normally happens when your project has too many files. Make sure your .gitignore is ignoring files you don't want to include in your search"
+        );
+      }
     });
     head.on("close", (_code) => {
       // TODO: Verify exit code
