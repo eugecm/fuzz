@@ -2,7 +2,7 @@
   "name": "fuzz",
   "displayName": "Fuzz",
   "description": "Fuzzy search for vscode",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "eugecm",
   "repository": {
     "url": "https://github.com/eugecm/fuzz"
