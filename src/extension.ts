@@ -175,7 +175,12 @@ export function activate(context: vscode.ExtensionContext) {
     qp.onDidChangeActive(async () => {
       let result = (qp.activeItems[0] as SearchEntryQuickPickItem).result;
       let document = await vscode.workspace.openTextDocument(result.filePath);
-      let range = new vscode.Range(result.lineNumber, 0, result.lineNumber, 0);
+      let range = new vscode.Range(
+        result.lineNumber - 1,
+        0,
+        result.lineNumber - 1,
+        0
+      );
       let editor = await vscode.window.showTextDocument(document, {
         selection: range,
         preview: true,
@@ -187,7 +192,12 @@ export function activate(context: vscode.ExtensionContext) {
       let result = (qp.activeItems[0] as SearchEntryQuickPickItem).result;
       let document = await vscode.workspace.openTextDocument(result.filePath);
       let editor = await vscode.window.showTextDocument(document, undefined);
-      let range = new vscode.Range(result.lineNumber, 0, result.lineNumber, 0);
+      let range = new vscode.Range(
+        result.lineNumber - 1,
+        0,
+        result.lineNumber - 1,
+        0
+      );
       editor.selection = new vscode.Selection(range.start, range.end);
       editor.revealRange(range);
       qp.dispose();
