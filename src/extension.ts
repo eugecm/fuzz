@@ -116,13 +116,18 @@ const search = (term: string, limit: number) =>
         output
           .split("\n")
           .slice(0, limit)
-          .map((rawLine) => {
+          .reduce<SearchResult[]>((acc, rawLine) => {
             const parts = rawLine.split(":");
+            if (parts.length < 3) {
+              return acc;
+            }
+
             const filePath = parts[0];
             const lineNumber = Number(parts[1]);
-            const line = parts.slice(2)[1];
-            return new SearchResult(filePath, lineNumber, line);
-          })
+            const line = parts.slice(3).join(":"); // Join everything back
+            acc.push(new SearchResult(filePath, lineNumber, line));
+            return acc;
+          }, [])
       );
     });
 
