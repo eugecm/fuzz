@@ -38,6 +38,10 @@ class SearchEntryQuickPickItem implements vscode.QuickPickItem {
 
 const search = (term: string, limit: number) =>
   new Promise<SearchResult[]>((resolve, reject) => {
+    if (term.length === 0) {
+      return resolve([]);
+    }
+
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (workspaceFolders === undefined) {
       reject("no workspaces available");
